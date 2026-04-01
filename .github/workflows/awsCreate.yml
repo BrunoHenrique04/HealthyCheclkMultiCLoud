@@ -1,0 +1,103 @@
+name: awsCreate — Deploy Infraestrutura AWS
+
+on:
+  workflow_dispatch:
+    inputs:
+      rm_number:
+        description: "Número de RM do aluno (ex: 562192)"
+        required: true
+        type: string
+      gcp_site_ip:
+        description: "IP externo do GCP (obtido após rodar googleCreate)"
+        required: true
+        type: string
+      hosted_zone_id:
+        description: "ID da Hosted Zone Route 53 (caserobots.com.br)"
+        required: true
+        type: string
+
+env:
+  AWS_REGION: us-east-1
+  TF_DIR: terraform/aws
+
+jobs:
+  terraform-aws:
+    name: "Terraform — Provisiona AWS"
+    runs-on: ubuntu-latest
+    outputs:
+      ec2_ip: ${{ steps.outputs.outputs.ec2_ip }}
+      ec2_sg: ${{ steps.outputs.outputs.ec2_sg }}
+
+    defaults:
+      run:
+        working-directory: ${{ env.TF_DIR }}
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciais AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Instalar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: |
+          terraform plan \
+            -var="rm_number=${{ github.event.inputs.rm_number }}" \
+            -var="hosted_zone_id=${{ github.event.inputs.hosted_zone_id }}" \
+            -var="gcp_site_ip=${{ github.event.inputs.gcp_site_ip }}" \
+            -out=tfplan
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+
+      - name: Capturar Outputs
+        id: outputs
+        run: |
+          echo "ec2_ip=$(terraform output -raw ec2_public_ip)" >> $GITHUB_OUTPUT
+          echo "ec2_sg=$(terraform output -raw ec2_security_group_id)" >> $GITHUB_OUTPUT
+          echo "site_url=$(terraform output -raw site_url)" >> $GITHUB_OUTPUT
+
+      - name: Resumo do Deploy
+        run: |
+          echo "## ✅ AWS Deploy Concluído" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Recurso | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| EC2 IP Público | ${{ steps.outputs.outputs.ec2_ip }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Group ID | ${{ steps.outputs.outputs.ec2_sg }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Site URL | ${{ steps.outputs.outputs.site_url }} |" >> $GITHUB_STEP_SUMMARY
+
+  health-check:
+    name: "Verificar Site AWS"
+    runs-on: ubuntu-latest
+    needs: terraform-aws
+
+    steps:
+      - name: Aguardar inicialização do EC2 (user_data)
+        run: sleep 90
+
+      - name: Testar HTTP no site AWS
+        run: |
+          EC2_IP="${{ needs.terraform-aws.outputs.ec2_ip }}"
+          echo "Testando http://${EC2_IP}..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "http://${EC2_IP}" || echo "000")
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ Site AWS respondendo com HTTP 200"
+          else
+            echo "⚠️  Site retornou status: $STATUS (pode ainda estar inicializando)"
+          fi
