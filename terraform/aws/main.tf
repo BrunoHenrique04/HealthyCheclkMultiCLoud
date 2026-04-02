@@ -34,7 +34,7 @@ resource "aws_key_pair" "fiap_key" {
 }
 
 resource "aws_security_group" "ec2_sg" {
-  name        = "sg-ec2-fiap-rm${var.rm_number}"
+  name        = "ec2-fiap-rm${var.rm_number}"
   description = "Security Group da instancia EC2 FIAP Multicloud"
 
   ingress {
@@ -61,7 +61,7 @@ resource "aws_security_group" "ec2_sg" {
   }
 
   tags = {
-    Name    = "sg-ec2-fiap-rm${var.rm_number}"
+    Name    = "ec2-fiap-rm${var.rm_number}"
     Lab     = "FIAP-Multicloud"
     Aluno   = "rm${var.rm_number}"
     Managed = "terraform"

@@ -13,7 +13,7 @@ AWS_REGION     ?= us-east-1
 GCP_PROJECT_ID ?= $(error Defina GCP_PROJECT_ID)
 GCP_ZONE       ?= us-east1-b
 
-EC2_SG_NAME    = sg-ec2-fiap-rm$(RM_NUMBER)
+EC2_SG_NAME    = ec2-fiap-rm$(RM_NUMBER)
 GCP_FIREWALL   = fiap-allow-http-rm$(RM_NUMBER)
 GCP_INSTANCE   = fiap-site-rm$(RM_NUMBER)
 
