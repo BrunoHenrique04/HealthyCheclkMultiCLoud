@@ -19,3 +19,9 @@ variable "gcp_site_ip" {
   type        = string
   default     = ""
 }
+
+variable "aws_public_key" {
+  description = "Chave pública SSH (conteúdo) para criar Key Pair na AWS. Opcional."
+  type        = string
+  default     = ""
+}

@@ -62,6 +62,12 @@ terraform apply \
 	-var="gcp_site_ip=<IP_DO_GCP>"
 ```
 
+Se quiser criar Key Pair para SSH na EC2, adicione também:
+
+```bash
+-var='aws_public_key=ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ...'
+```
+
 ## Operação de failover
 
 ```bash

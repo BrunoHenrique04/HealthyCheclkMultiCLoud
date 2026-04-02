@@ -28,8 +28,9 @@ data "aws_ami" "amazon_linux_2023" {
 }
 
 resource "aws_key_pair" "fiap_key" {
+  count      = var.aws_public_key != "" ? 1 : 0
   key_name   = "fiap-chave-rm${var.rm_number}"
-  public_key = file("~/.ssh/id_rsa.pub")
+  public_key = var.aws_public_key
 }
 
 resource "aws_security_group" "ec2_sg" {
@@ -70,7 +71,7 @@ resource "aws_security_group" "ec2_sg" {
 resource "aws_instance" "fiap_site_aws" {
   ami                    = data.aws_ami.amazon_linux_2023.id
   instance_type          = "t2.micro"
-  key_name               = aws_key_pair.fiap_key.key_name
+  key_name               = var.aws_public_key != "" ? aws_key_pair.fiap_key[0].key_name : null
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
 
   user_data = <<-EOF
