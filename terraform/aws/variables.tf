@@ -4,6 +4,12 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
+variable "aws_instance_type" {
+  description = "Tipo da instância EC2"
+  type        = string
+  default     = "t3.micro"
+}
+
 variable "rm_number" {
   description = "Número de RM do aluno (ex: 562192)"
   type        = string

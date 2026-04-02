@@ -70,7 +70,7 @@ resource "aws_security_group" "ec2_sg" {
 
 resource "aws_instance" "fiap_site_aws" {
   ami                    = data.aws_ami.amazon_linux_2023.id
-  instance_type          = "t2.micro"
+  instance_type          = var.aws_instance_type
   key_name               = var.aws_public_key != "" ? aws_key_pair.fiap_key[0].key_name : null
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
 
